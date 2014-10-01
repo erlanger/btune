@@ -1,0 +1,15 @@
+{application, btune,
+ [
+  {description, "btune: cluster-wide broadcast/listen"},
+  {vsn, "1"},
+  {modules, [
+             btune
+            ]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  gproc
+                 ]},
+  {env, []}
+ ]}.

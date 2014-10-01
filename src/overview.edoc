@@ -1,0 +1,53 @@
+
+   btune - Cluster-wide broadcast/listen.
+
+@author erlanger
+@version {@vsn}
+@title btune - Gproc-based cluster-wide messaging 
+
+@doc This application implements a simple cluster-wide message broadcasting/listening
+     library.
+
+== Introduction ==
+It is meant to be a specific type of publish/subscribe model adapted to erlang's
+messaging and node structure. 
+
+== Important definitions ==
+<dl>
+   <dt>key</dt>
+   <dd> A `key' is any erlang `term()' that identifies a desire to listen to
+        messages. 
+   </dd>
+   <dt>cluster</dt>
+   <dd> A cluster is defined as all the nodes connected to the current node.
+        In order to have a dynamic cluster, where nodes can be automatically
+        discovered you can use  `nodefinder' at
+        [http://github.com/erlanger/nodefinder] to enable automatic discovery of
+        nodes. 
+
+        With the use of `nodefinder' a cluster is dynamically managed
+        and all nodes on the LAN having the same erlang cookie and running 
+        `nodefinder' are automatically added so that `btune' is always 
+        connected to all the nodes.
+   </dd>
+</dl>
+
+== Where ==
+
+<ul>
+<li>Project's repository: [https://github.com/erlanger/btune]</li>
+<li>Git clone command: `git clone https://github.com/erlanger/btune.git'</li>
+</ul>
+
+== Features ==
+
+<ol>
+<li>Simple API</li>
+<li>It is based on <a href="https://github.com/uwiger/gproc">gproc</a>, so its foundation is solid.</li>
+<li>Broadcast messages cluster-wide without having to know about Pids.</li>
+<li>Listen to messages without having to know about registered servers.</li>
+<li>Match keys with a pattern similar to ets:match().</li>
+</ol>
+
+ 
+@end
