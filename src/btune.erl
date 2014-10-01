@@ -1,7 +1,7 @@
 -module(btune).
 
 %% Exports
--export([bcast/2,listen/1,
+-export([bcast/2,listen/1,unlisten/1,
          match/2,match/1,
          plisteners/1,plisteners/2,
          listeners/1,listeners/2]).
@@ -35,6 +35,12 @@ bcast(Key,Msg) ->
 -spec listen(Key::key()) -> true.
 listen(Key) ->
    gproc:reg({p,l,Key}).
+
+% @doc Removes the calling process from the list of listeners of  `Key'.
+% @end
+-spec unlisten(Key::key()) -> true.
+unlisten(Key) ->
+   gproc:unreg({p,l,Key}).
 
 % @doc match keys againts `Pattern' as in {@link ets:match/2}.
 %      The easiest way to use this function is to think of
@@ -159,12 +165,17 @@ getkeys([[{p,l,Key},_,_]|R]) ->
 -ifdef(EUNIT).
 
 -define(tt(T,F), {T,timeout, 20, ?_test(F)}).
--define(run(Proc,M,F,A), begin global:send(Proc, {self(), func, M, F, A}), receive V0 -> V0 after 3000 -> V0=timeout end end).
+-define(run(Proc,RetVal,M,F,A),?assertMatch(RetVal when RetVal =/= timeout,
+                                     begin
+                                        global:send(Proc, {self(), func, M, F, A}),
+                                        receive V0 -> V0 after 3000 -> timeout end
+                                     end)).
 -define(reg(Proc,T,V), begin global:send(Proc, {self(), reg, T, V}), receive ok -> ok after 1000 -> timeout end end).
 -define(recvmatch(Value), ?assertMatch(Value,begin receive V -> V after 4000 -> timeout end end)).
 -define(NOERROR(Expr),try Expr catch _:_ -> ok end).
 
 %FIXME: this should probably use slave:start_link or eunit {node,...}
+% @private
 startvm(Name,Code) ->
    Node = atom_to_list(node()),
    Exe = "erl -noinput -sname " ++ Name
@@ -182,6 +193,7 @@ close(P) when is_port(P) ->
 close(_P) ->
    ok.
 
+% @private
 test_start() ->
    timer:sleep(500),
    io:format(user,"gproc start=~p",[application:start(gproc)]),
@@ -228,7 +240,8 @@ exec_test_() ->
         [
             ?tt("listeners()",test_listeners()),
             ?tt("bcast()",test_bcast()),
-            ?tt("match()",test_match())
+            ?tt("match()",test_match()),
+            ?tt("unlisten()",test_unlisten())
         ]
     }.
 
@@ -237,8 +250,8 @@ test_bcast() ->
       [{_Pid,undefined},{_Pid1,undefined}],
       begin
          Pid = self(),
-         true=?run(node1,btune,listen,[{bkey,Pid}]),
-         true=?run(node2,btune,listen,[{bkey,Pid}]),
+         ?run(node1,true,btune,listen,[{bkey,Pid}]),
+         ?run(node2,true,btune,listen,[{bkey,Pid}]),
          btune:bcast({bkey,Pid},"Hello!"),
 
          ?recvmatch({bkey,"Hello!"}),
@@ -260,10 +273,26 @@ test_match() ->
       [{{bkey,10},_},{{bkey,30},_},{{bkey,20},_},{{bkey,40},_}],
       begin
          Pid=self(),
-         true=?run(node1,btune,listen,[{{bkey,10},Pid}]),
-         true=?run(node2,btune,listen,[{{bkey,20},Pid}]),
-         true=?run(node1,btune,listen,[{{bkey,30},Pid}]),
-         true=?run(node2,btune,listen,[{{bkey,40},Pid}]),
+         ?run(node1,true,btune,listen,[{{bkey,10},Pid}]),
+         ?run(node2,true,btune,listen,[{{bkey,20},Pid}]),
+         ?run(node1,true,btune,listen,[{{bkey,30},Pid}]),
+         ?run(node2,true,btune,listen,[{{bkey,40},Pid}]),
          btune:match({{bkey,'_'},'_'})
       end).
+
+test_unlisten() ->
+   [?assertMatch(
+      [{{newkey,10},Pid}],
+      begin
+         Pid=self(),
+         ?run(node1,true,btune,listen,  [{{newkey,10},Pid}]),
+         btune:match({{newkey,'_'},'_'})
+      end),
+   ?assertMatch(
+      [],
+      begin
+         Pid=self(),
+         ?run(node1,true,btune,unlisten,[{{newkey,10},Pid}]),
+         btune:match({{newkey,'_'},'_'})
+        end)].
 -endif.
