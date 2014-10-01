@@ -5,6 +5,8 @@ lists:keymerge(1,
     lists:keysort(1, [
         {edoc_opts, [{overview,     "src/overview.edoc"},
                      {title,        "The btune module"},
+                     %{doclet, edown_doclet},
+                     %{top_level_readme, {"./README.md", "http://github.com/erlanger/btune"}},
                      %{includes,     ["include"]},
                      {def,          {vsn, Vsn}},
                      {stylesheet_file, "src/edoc.css"},
