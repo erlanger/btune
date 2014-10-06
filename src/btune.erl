@@ -28,7 +28,7 @@
 % @end
 -spec bcast(Key::key(),Msg::any()) -> any().
 bcast(Key,Msg) ->
-   gproc:bcast([node()|nodes()],{p,l,Key},{Key,Msg}).
+   gproc:bcast([node()|nodes()],{p,l,Key},Msg).
 
 % @doc Adds the calling process to the list of listeners of  `Key'.
 % @end
@@ -252,7 +252,7 @@ test_bcast() ->
          Pid = self(),
          ?run(node1,true,btune,listen,[{bkey,Pid}]),
          ?run(node2,true,btune,listen,[{bkey,Pid}]),
-         btune:bcast({bkey,Pid},"Hello!"),
+         btune:bcast({bkey,Pid},{{bkey,Pid},"Hello!"}),
 
          ?recvmatch({bkey,"Hello!"}),
          ?recvmatch({bkey,"Hello!"}),
