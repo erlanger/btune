@@ -3,8 +3,7 @@
 %% Exports
 -export([bcast/2,listen/1,unlisten/1,
          match/2,match/1,
-         plisteners/1,plisteners/2,
-         listeners/1,listeners/2]).
+         lookup_values/1,lookup_values/2]).
 
 -ifdef(TEST).
 -export([test_start/0,startvm/2]). 
@@ -60,79 +59,41 @@ unlisten(Key) ->
 %      true
 %      ...
 %      n1@host> btune:match({mykey,'_','_'}).
-%      [{mykey,param1,param2},{mykey,param3,param4}]
+%      [{{mykey,param1,param2},<0.43,0>,undefined},{{mykey,param3,param4},<3332.43.0>,undefined}]
 %      '''
 %
 %      A default timeout of 3 seconds is presumed.
 %      Use {@link match/2} if you want a different one.
 % @end
--spec match(Pattern::tuple()) -> [key()].
+-spec match(Pattern::term()) -> [{key(),pid(),Value::term()}].
 match(Pattern) ->
    match(Pattern,?TIMEOUT).
 
-% @doc Same as {@link pmatch/1} but with a specific timeout in milliseconds.
+% @doc Same as {@link match/1} but with a specific timeout in milliseconds.
 % @end
--spec match(Pattern::tuple(),Timeout::integer()) -> [key()].
+-spec match(Pattern::term(),Timeout::integer()) -> [{key(),pid(),Value::term()}].
 match(Pattern,Timeout) ->
    MS=[{{{p,l,Pattern},'_','_'}, %Pid and Value are not used
           [],                    %Guard is empty
         ['$$']}],                %Return list of expected values
 
    R=mcall(gproc,select,[{l,p},MS],Timeout),
-   getkeys(R).
+   getresult(R).
     
 
-
 % @private
-% @doc Partial match a tuple against registered keys in all nodes.
-%
-%      This function is meant to provide a simple match scheme
-%      to simplify searching for keys that match the elements
-%      of the given tuple:
-%
-%      ```
-%      n1@host> btune:listen({mykey,param1,param2}).
-%      true
-%      ...
-%      n2@host> btune:listen({mykey,param3,param4}).
-%      true
-%      ...
-%      n1@host> btune:plisteners({mykey}).
-%      [{mykey,param1,param2},{mykey,param3,param4}]
-%      '''
-%      A default timeout of 3 seconds is presumed. Use
-%      {@link plisteners/2} for a different timeout.
-%
-% @end
--spec plisteners(PartialKey::tuple()) -> [key()].
-plisteners(PartialKey) when is_tuple(PartialKey) ->
-   plisteners(PartialKey,?TIMEOUT).
-
-% @private
-% @doc   Same as {@link plisteners/1} with a specified timeout in milliseconds.
-% @end
--spec plisteners(PartialKey::tuple(),Timeout::integer()) -> [key()].
-plisteners(PartialKey,Timeout) when is_tuple(PartialKey) ->
-   G = [ { '==', {element,N,'$1'},element(N,PartialKey)} || N <- lists:seq(1,tuple_size(PartialKey)) ],
-   MS=[{{{p,l,'$1'},'_','_'}, %Pid and Value are not used
-          G,                  %Guard to match elements in PartialKey
-        ['$1']}],             %Return list of keys
-
-   mcall(gproc,select,[{l,p},MS],Timeout).
-
-% @private
-% @doc Returns `[{pid(),value()]' list for all listeners of `Key'.
+% @doc Returns `[{pid(),value()]' list for all `Key'(s) in the cluster.
 % @equiv listeners(Key,DEFAULT_TIMEOUT)
 % @end
--spec listeners(Key::key()) -> [{pid(), term()}].
-listeners(Key) ->
-   listeners(Key,?TIMEOUT).
+-spec lookup_values(Key::key()) -> [{pid(), Value::term()}].
+lookup_values(Key) ->
+   lookup_values(Key,?TIMEOUT).
 
 % @private
-% @doc   Same as {@link listeners/1} but with the a specified timeout.
+% @doc   Same as {@link lookup_values/1} but with the a specified timeout.
 % @end
--spec listeners(Key::key(),Timeout::integer()) -> [{pid(), term()}].
-listeners(Key,Timeout) ->
+-spec lookup_values(Key::key(),Timeout::integer()) -> [{pid(), Value::term()}].
+lookup_values(Key,Timeout) ->
    mcall(gproc,lookup_values,[{p,l,Key}],Timeout).
 
 
@@ -151,11 +112,11 @@ mcall(M,F,A,Timeout) ->
    end.
 
 %get keys from list of the form [[{p,l,Key},Pid,Value},...],[...]]
-getkeys([]) ->
+getresult([]) ->
    [];
 
-getkeys([[{p,l,Key},_,_]|R]) ->
-   lists:append([Key],getkeys(R)).
+getresult([[{p,l,Key},Pid,Val]|R]) ->
+   lists:append([{Key,Pid,Val}],getresult(R)).
 
 
 %%%---------------------------------------------------------------------
@@ -238,8 +199,8 @@ exec_test_() ->
             close(P2)
         end,
         [
-            ?tt("listeners()",test_listeners()),
             ?tt("bcast()",test_bcast()),
+            ?tt("lookup_values()",test_lookup_values()),
             ?tt("match()",test_match()),
             ?tt("unlisten()",test_unlisten())
         ]
@@ -256,21 +217,24 @@ test_bcast() ->
 
          ?recvmatch({bkey,"Hello!"}),
          ?recvmatch({bkey,"Hello!"}),
-         btune:listeners({bkey,Pid})
+         btune:lookup_values({bkey,Pid})
       end).
 
-test_listeners() ->
+test_lookup_values() ->
    ?assertMatch(
       [{_Pid,{vnode1,v2node1}},{_Pid1,{vnode2,v2node2}}],
       begin
          ok=?reg(node1,{p,l,mykey},{vnode1,v2node1}),
          ok=?reg(node2,{p,l,mykey},{vnode2,v2node2}),
-         btune:listeners(mykey)
+         btune:lookup_values(mykey)
       end).
 
 test_match() ->
    ?assertMatch(
-      [{{bkey,10},_},{{bkey,30},_},{{bkey,20},_},{{bkey,40},_}],
+      [{{{bkey,10},_},_,undefined},
+       {{{bkey,30},_},_,undefined},
+       {{{bkey,20},_},_,undefined},
+       {{{bkey,40},_},_,undefined}],
       begin
          Pid=self(),
          ?run(node1,true,btune,listen,[{{bkey,10},Pid}]),
@@ -282,7 +246,7 @@ test_match() ->
 
 test_unlisten() ->
    [?assertMatch(
-      [{{newkey,10},Pid}],
+      [{{{newkey,10},Pid},_,undefined}],
       begin
          Pid=self(),
          ?run(node1,true,btune,listen,  [{{newkey,10},Pid}]),
