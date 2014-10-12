@@ -3,6 +3,7 @@
 %% Exports
 -export([bcast/2,listen/1,unlisten/1,
          match/2,match/1,
+         no_listener/1,
          lookup_values/1,lookup_values/2]).
 
 -ifdef(TEST).
@@ -73,16 +74,28 @@ match(Pattern) ->
 % @end
 -spec match(Pattern::term(),Timeout::integer()) -> [{key(),pid(),Value::term()}].
 match(Pattern,Timeout) ->
-   MS=[{{{p,l,Pattern},'_','_'}, %Pid and Value are not used
+   MS=[{{{p,l,Pattern},'_','_'}, %Pid and Value are not used to match (but are returned)
           [],                    %Guard is empty
-        ['$$']}],                %Return list of expected values
+        ['$$']}],                %Return list of expected [{p,l,Key},Pid,Value]
 
    R=mcall(gproc,select,[{l,p},MS],Timeout),
    getresult(R).
-    
+
+% @doc Returns true if there are no listeners for keys that match the given `Pattern',
+%      otherwise returns false.
+%
+%      The `Pattern' is the same as in {@link match/1}.
+% @end
+-spec no_listener(Pattern::term()) -> true|false.
+no_listener(Pattern) ->
+   R=match(Pattern),
+   case R of
+      []   -> true;
+      _Any -> false
+   end.
 
 % @private
-% @doc Returns `[{pid(),value()]' list for all `Key'(s) in the cluster.
+% @doc Returns `[{pid(),value()]' list for  `Key' in the cluster.
 % @equiv listeners(Key,DEFAULT_TIMEOUT)
 % @end
 -spec lookup_values(Key::key()) -> [{pid(), Value::term()}].
@@ -202,7 +215,8 @@ exec_test_() ->
             ?tt("bcast()",test_bcast()),
             ?tt("lookup_values()",test_lookup_values()),
             ?tt("match()",test_match()),
-            ?tt("unlisten()",test_unlisten())
+            ?tt("unlisten()",test_unlisten()),
+            ?tt("no_listener()",test_nolistener())
         ]
     }.
 
@@ -259,4 +273,14 @@ test_unlisten() ->
          ?run(node1,true,btune,unlisten,[{{newkey,10},Pid}]),
          btune:match({{newkey,'_'},'_'})
         end)].
+
+test_nolistener() ->
+   ?assertMatch(
+      [ false, false, true, false ],
+      begin
+         ?run(node1,true,btune,listen,[{nolis,10}]),
+         ?run(node2,true,btune,listen,[{nolis,20}]),
+         [no_listener({nolis,10}), no_listener({nolis,20}),
+          no_listener({nolis,30}), no_listener({nolis,'_'}) ]
+      end).
 -endif.
