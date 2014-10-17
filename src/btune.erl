@@ -82,16 +82,16 @@ match(Pattern,Timeout) ->
    getresult(R).
 
 % @doc Returns true if there are no listeners for keys that match the given `Pattern',
-%      otherwise returns false.
+%      otherwise returns the number of matches for `Pattern'.
 %
 %      The `Pattern' is the same as in {@link match/1}.
 % @end
--spec no_listener(Pattern::term()) -> true|false.
+-spec no_listener(Pattern::term()) -> true|integer().
 no_listener(Pattern) ->
    R=match(Pattern),
    case R of
       []   -> true;
-      _Any -> false
+      _Any -> length(R)
    end.
 
 % @private
@@ -276,7 +276,7 @@ test_unlisten() ->
 
 test_nolistener() ->
    ?assertMatch(
-      [ false, false, true, false ],
+      [ 1, 1, true, 2 ],
       begin
          ?run(node1,true,btune,listen,[{nolis,10}]),
          ?run(node2,true,btune,listen,[{nolis,20}]),
