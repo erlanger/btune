@@ -2,7 +2,7 @@
 
 # btune - Gproc-based cluster-wide messaging #
 
-__Version:__ 0.1.0
+__Version:__ 0.2.0-3-gbbe0ba0
 
 __Authors:__ erlanger.
 

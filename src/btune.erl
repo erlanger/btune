@@ -60,7 +60,8 @@ unlisten(Key) ->
 %      true
 %      ...
 %      n1@host> btune:match({mykey,'_','_'}).
-%      [{{mykey,param1,param2},<0.43,0>,undefined},{{mykey,param3,param4},<3332.43.0>,undefined}]
+%      [{{mykey,param1,param2},<0.43,0>,undefined},
+%         {{mykey,param3,param4},<3332.43.0>,undefined}]
 %      '''
 %
 %      A default timeout of 3 seconds is presumed.

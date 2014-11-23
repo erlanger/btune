@@ -31,7 +31,8 @@ functions the key needs to be a tuple.
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#bcast-2">bcast/2</a></td><td>Send <code>Msg</code> to all connected nodes.</td></tr><tr><td valign="top"><a href="#listen-1">listen/1</a></td><td>Adds the calling process to the list of listeners of<code>Key</code>.</td></tr><tr><td valign="top"><a href="#match-1">match/1</a></td><td>match keys againts <code>Pattern</code> as in <a href="ets.md#match-2"><code>ets:match/2</code></a>.</td></tr><tr><td valign="top"><a href="#match-2">match/2</a></td><td>Same as <a href="#pmatch-1"><code>pmatch/1</code></a> but with a specific timeout in milliseconds.</td></tr><tr><td valign="top"><a href="#unlisten-1">unlisten/1</a></td><td>Removes the calling process from the list of listeners of<code>Key</code>.</td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#bcast-2">bcast/2</a></td><td>Send <code>Msg</code> to all connected nodes.</td></tr><tr><td valign="top"><a href="#listen-1">listen/1</a></td><td>Adds the calling process to the list of listeners of<code>Key</code>.</td></tr><tr><td valign="top"><a href="#match-1">match/1</a></td><td>match keys againts <code>Pattern</code> as in <a href="ets.md#match-2"><code>ets:match/2</code></a>.</td></tr><tr><td valign="top"><a href="#match-2">match/2</a></td><td>Same as <a href="#match-1"><code>match/1</code></a> but with a specific timeout in milliseconds.</td></tr><tr><td valign="top"><a href="#no_listener-1">no_listener/1</a></td><td>Returns true if there are no listeners for keys that match the given <code>Pattern</code>,
+otherwise returns the number of matches for <code>Pattern</code>.</td></tr><tr><td valign="top"><a href="#unlisten-1">unlisten/1</a></td><td>Removes the calling process from the list of listeners of<code>Key</code>.</td></tr></table>
 
 
 <a name="functions"></a>
@@ -66,7 +67,7 @@ Adds the calling process to the list of listeners of`Key`.
 
 
 <pre><code>
-match(Pattern::tuple()) -&gt; [<a href="#type-key">key()</a>]
+match(Pattern::term()) -&gt; [{<a href="#type-key">key()</a>, pid(), Value::term()}]
 </code></pre>
 <br />
 
@@ -91,7 +92,8 @@ Here is an example:
       true
       ...
       n1@host> btune:match({mykey,'_','_'}).
-      [{mykey,param1,param2},{mykey,param3,param4}]
+      [{{mykey,param1,param2},<0.43,0>,undefined},
+         {{mykey,param3,param4},<3332.43.0>,undefined}]
 ```
 
 
@@ -103,11 +105,27 @@ Use [`match/2`](#match-2) if you want a different one.
 
 
 <pre><code>
-match(Pattern::tuple(), Timeout::integer()) -&gt; [<a href="#type-key">key()</a>]
+match(Pattern::term(), Timeout::integer()) -&gt; [{<a href="#type-key">key()</a>, pid(), Value::term()}]
 </code></pre>
 <br />
 
-Same as [`pmatch/1`](#pmatch-1) but with a specific timeout in milliseconds.
+Same as [`match/1`](#match-1) but with a specific timeout in milliseconds.
+<a name="no_listener-1"></a>
+
+### no_listener/1 ###
+
+
+<pre><code>
+no_listener(Pattern::term()) -&gt; true | integer()
+</code></pre>
+<br />
+
+
+Returns true if there are no listeners for keys that match the given `Pattern`,
+otherwise returns the number of matches for `Pattern`.
+
+
+The `Pattern` is the same as in [`match/1`](#match-1).
 <a name="unlisten-1"></a>
 
 ### unlisten/1 ###
