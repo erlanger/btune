@@ -1,0 +1,51 @@
+%% -*- erlang -*-
+%%
+%% This helper script checks if doc is being built, otherwise removes edoc dep.
+%% To build docs, call `rebar get-deps edoc`
+%% Assumes that the rebar config is bound to CONFIG
+
+Add_plugin = fun(CFG) ->
+   case lists:keyfind(plugins,  1,  CFG) of
+      false ->
+         [{plugins,[rebar_edown]} | CFG];
+
+      {plugins, L} ->
+         lists:keystore(plugins, 1, CFG, {plugins, [rebar_edown|L]})
+   end
+end,
+
+[_|Args] = init:get_plain_arguments().  % rebar 'commands' and options
+case lists:member("edoc", Args) orelse lists:member("edown", Args) of
+   false ->
+   {ok,C1} = file:script(filename:join(filename:dirname(SCRIPT),
+					    "remove_deps.script"),
+		      [{'CONFIG', CONFIG}, {'DEPS', [edown,rebar_edown]}]),
+	C1;
+   true ->
+	%% We actually only need to start inets if we have a doc path with http URIS
+	application:start(crypto),
+	application:start(public_key),
+	application:start(ssl),
+	application:start(inets),
+   CFG1 = Add_plugin(CONFIG),
+        case code:lib_dir(edown) of
+            {error, bad_name} ->
+                io:fwrite("cannot find edown~n", []),
+                D = {edown, ".*",
+                     {git, "git://github.com/uwiger/edown.git", "HEAD"}},
+                D1 ={rebar_edown, ".*",
+                     {git, "git://github.com/erlanger/rebar_edown.git", "HEAD"}},
+                Deps = case lists:keyfind(deps, 1, CFG1) of
+                           false -> [D,D1];
+                           {_, Ds} ->
+                               case lists:keymember(edown, 1, Ds) of
+                                   true -> Ds;
+                                   false -> [D|[D1|Ds]]
+                               end
+                       end,
+                lists:keystore(deps, 1, CFG1, {deps, Deps});
+            _ ->
+                io:fwrite("edown in path~n", []),
+                CFG1
+        end
+end.
