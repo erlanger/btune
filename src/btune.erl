@@ -2,12 +2,13 @@
 
 %% Exports
 -export([bcast/2,listen/1,unlisten/1,
+         reg/1,unreg/1,
          match/2,match/1,
          no_listener/1,
          lookup_values/1,lookup_values/2]).
 
 -ifdef(TEST).
--export([test_start/0,startvm/2]). 
+-export([test_start/0,startvm/2]).
 -endif.
 
 -type key()   :: term().
@@ -24,33 +25,46 @@
 %% API
 %% ===
 
-% @doc Send `Msg' to all connected nodes.
+% @doc Send `Msg' to processes registered with `Key' in all connected nodes.
 % @end
 -spec bcast(Key::key(),Msg::any()) -> any().
 bcast(Key,Msg) ->
    gproc:bcast([node()|nodes()],{p,l,Key},Msg).
 
+% @doc Registers the calling process with `Key'.
+% @end
+-spec reg(Key::key()) -> true.
+reg(Key) ->
+   gproc:reg({p,l,Key}).
+
+% @doc Unregisters the `Key' that was previously registered by the
+%      calling process.
+% @end
+-spec unreg(Key::key()) -> true.
+unreg(Key) ->
+   gproc:unreg({p,l,Key}).
+
 % @doc Adds the calling process to the list of listeners of  `Key'.
 % @end
 -spec listen(Key::key()) -> true.
 listen(Key) ->
-   gproc:reg({p,l,Key}).
+   reg(Key).
 
 % @doc Removes the calling process from the list of listeners of  `Key'.
 % @end
 -spec unlisten(Key::key()) -> true.
 unlisten(Key) ->
-   gproc:unreg({p,l,Key}).
+   unreg(Key).
 
 % @doc match keys againts `Pattern' as in {@link ets:match/2}.
 %      The easiest way to use this function is to think of
 %      pattern matching in erlang. Simply use a '_' if you
 %      don't want to match on that value and an actual `term()'
-%      if you want to match. 
+%      if you want to match.
 %
-%      For example ``{'_',hello,'_'}'' will match 
+%      For example ``{'_',hello,'_'}'' will match
 %      ``{ "hi",hello, "it is me" }'', but not
-%      ``{ "hi",hey, "it is me"}''. 
+%      ``{ "hi",hey, "it is me"}''.
 %      Here is an example:
 %      ```
 %      n1@host> btune:listen({mykey,param1,param2}).
