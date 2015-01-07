@@ -4,7 +4,7 @@
 -export([bcast/2,listen/1,unlisten/1,
          reg/1,unreg/1,
          match/2,match/1,
-         no_listener/1,
+         count/1,
          lookup_values/1,lookup_values/2]).
 
 -ifdef(TEST).
@@ -101,13 +101,10 @@ match(Pattern,Timeout) ->
 %
 %      The `Pattern' is the same as in {@link match/1}.
 % @end
--spec no_listener(Pattern::term()) -> true|integer().
-no_listener(Pattern) ->
+-spec count(Pattern::term()) -> true|integer().
+count(Pattern) ->
    R=match(Pattern),
-   case R of
-      []   -> true;
-      _Any -> length(R)
-   end.
+   length(R).
 
 % @private
 % @doc Returns `[{pid(),value()]' list for  `Key' in the cluster.
@@ -231,7 +228,7 @@ exec_test_() ->
             ?tt("lookup_values()",test_lookup_values()),
             ?tt("match()",test_match()),
             ?tt("unlisten()",test_unlisten()),
-            ?tt("no_listener()",test_nolistener())
+            ?tt("count()",test_count())
         ]
     }.
 
@@ -289,13 +286,13 @@ test_unlisten() ->
          btune:match({{newkey,'_'},'_'})
         end)].
 
-test_nolistener() ->
+test_count() ->
    ?assertMatch(
-      [ 1, 1, true, 2 ],
+      [ 1, 1, 0, 2 ],
       begin
          ?run(node1,true,btune,listen,[{nolis,10}]),
          ?run(node2,true,btune,listen,[{nolis,20}]),
-         [no_listener({nolis,10}), no_listener({nolis,20}),
-          no_listener({nolis,30}), no_listener({nolis,'_'}) ]
+         [count({nolis,10}), count({nolis,20}),
+          count({nolis,30}), count({nolis,'_'}) ]
       end).
 -endif.
