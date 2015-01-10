@@ -3,7 +3,7 @@
 %% Exports
 -export([bcast/2,listen/1,unlisten/1,
          reg/1,unreg/1,
-         match/2,match/1,
+         match/2,match/1,match_rnd/1,
          count/1,
          lookup_values/1,lookup_values/2]).
 
@@ -55,6 +55,15 @@ listen(Key) ->
 -spec unlisten(Key::key()) -> true.
 unlisten(Key) ->
    unreg(Key).
+
+% @doc Like {@link match/1} but returns one random entry.
+% @end
+-spec match_rnd(Pattern::term()) -> {key(),pid(),Value::term()}.
+match_rnd(Pattern) ->
+   case match(Pattern) of
+      [] -> error(no_match);
+      L  -> lists:nth( random:uniform(length(L)), L)
+   end.
 
 % @doc match keys againts `Pattern' as in {@link ets:match/2}.
 %      The easiest way to use this function is to think of
@@ -227,6 +236,7 @@ exec_test_() ->
             ?tt("bcast()",test_bcast()),
             ?tt("lookup_values()",test_lookup_values()),
             ?tt("match()",test_match()),
+            ?tt("match_rnd()",test_match_rnd()),
             ?tt("unlisten()",test_unlisten()),
             ?tt("count()",test_count())
         ]
@@ -268,6 +278,21 @@ test_match() ->
          ?run(node1,true,btune,listen,[{{bkey,30},Pid}]),
          ?run(node2,true,btune,listen,[{{bkey,40},Pid}]),
          btune:match({{bkey,'_'},'_'})
+      end).
+
+test_match_rnd() ->
+   ?assert(
+      begin
+         Pid=self(),
+         ?run(node1,true,btune,listen,[{{bkey1,10},Pid}]),
+         ?run(node2,true,btune,listen,[{{bkey1,20},Pid}]),
+         ?run(node1,true,btune,listen,[{{bkey1,30},Pid}]),
+         ?run(node2,true,btune,listen,[{{bkey1,40},Pid}]),
+         {{{bkey1,Num1},_},_,undefined} = btune:match_rnd({{bkey1,'_'},'_'}),
+         {{{bkey1,Num2},_},_,undefined} = btune:match_rnd({{bkey1,'_'},'_'}),
+         {{{bkey1,Num3},_},_,undefined} = btune:match_rnd({{bkey1,'_'},'_'}),
+         {{{bkey1,Num4},_},_,undefined} = btune:match_rnd({{bkey1,'_'},'_'}),
+         Num1 =/= Num2 orelse Num2 =/= Num3 orelse Num3 =/= Num4
       end).
 
 test_unlisten() ->
