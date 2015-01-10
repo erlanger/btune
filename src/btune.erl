@@ -2,7 +2,7 @@
 
 %% Exports
 -export([bcast/2,listen/1,unlisten/1,
-         reg/1,unreg/1,
+         reg/1,reg/2,unreg/1,
          match/2,match/1,match_rnd/1,
          count/1,
          lookup_values/1,lookup_values/2]).
@@ -36,6 +36,12 @@ bcast(Key,Msg) ->
 -spec reg(Key::key()) -> true.
 reg(Key) ->
    gproc:reg({p,l,Key}).
+
+% @doc Registers the calling process with `Key' and `Value'.
+% @end
+-spec reg(Key::key(),Value::term()) -> true.
+reg(Key,Value) ->
+   gproc:reg({p,l,Key},Value).
 
 % @doc Unregisters the `Key' that was previously registered by the
 %      calling process.
@@ -238,6 +244,8 @@ exec_test_() ->
             ?tt("match()",test_match()),
             ?tt("match_rnd()",test_match_rnd()),
             ?tt("unlisten()",test_unlisten()),
+            ?tt("reg(Key,Val)",test_reg()),
+            ?tt("reg(Key)",test_reg1()),
             ?tt("count()",test_count())
         ]
     }.
@@ -263,6 +271,22 @@ test_lookup_values() ->
          ok=?reg(node1,{p,l,mykey},{vnode1,v2node1}),
          ok=?reg(node2,{p,l,mykey},{vnode2,v2node2}),
          btune:lookup_values(mykey)
+      end).
+
+test_reg() ->
+   ?assertMatch(
+      [{regkey,_,{one,two}}],
+      begin
+         btune:reg(regkey,{one,two}),
+         btune:match(regkey)
+      end).
+
+test_reg1() ->
+   ?assertMatch(
+      [{regkey1,_,undefined}],
+      begin
+         btune:reg(regkey1,undefined),
+         btune:match(regkey1)
       end).
 
 test_match() ->
