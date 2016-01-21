@@ -5,7 +5,9 @@
          reg/1,reg/2,unreg/1,
          match/2,match/1,match_rnd/1,
          count/1,
-         lookup_values/1,lookup_values/2]).
+         lookup_values/1,lookup_values/2,
+         get_pid/1,get_pid/2
+        ]).
 
 -ifdef(TEST).
 -export([test_start/0,startvm/2]).
@@ -63,6 +65,7 @@ unlisten(Key) ->
    unreg(Key).
 
 % @doc Like {@link match/1} but returns one random entry.
+%      If there is no match a 'no_match` error is raised.
 % @end
 -spec match_rnd(Pattern::term()) -> {key(),pid(),Value::term()}.
 match_rnd(Pattern) ->
@@ -92,6 +95,7 @@ match_rnd(Pattern) ->
 %      [{{mykey,param1,param2},<0.43,0>,undefined},
 %         {{mykey,param3,param4},<3332.43.0>,undefined}]
 %      '''
+%      If there is no match an empty list `[]' is returned.
 %
 %      A default timeout of 3 seconds is presumed.
 %      Use {@link match/2} if you want a different one.
@@ -109,7 +113,7 @@ match(Pattern,Timeout) ->
         ['$$']}],                %Return list of expected [{p,l,Key},Pid,Value]
 
    R=mcall(gproc,select,[{l,p},MS],Timeout),
-   getresult(R).
+   getresult(lists:append(R)).
 
 % @doc Returns true if there are no listeners for keys that match the given `Pattern',
 %      otherwise returns the number of matches for `Pattern'.
@@ -134,22 +138,46 @@ lookup_values(Key) ->
 % @end
 -spec lookup_values(Key::key(),Timeout::integer()) -> [{pid(), Value::term()}].
 lookup_values(Key,Timeout) ->
-   mcall(gproc,lookup_values,[{p,l,Key}],Timeout).
+  R=mcall(gproc,lookup_values,[{p,l,Key}],Timeout),
+  lists:append(R).
 
+% @private
+% @doc Returns the `pid()' of the first process matching `Key'
+%      in the cluster, but it does not include any listeners.
+%
+%      The `pid()' returned is that of the first process in the cluster
+%      that was registered with a gproc `{n,l,Key}'. This is the
+%      case when using `{via,gproc,{n,l,Key}}' in any of the gen_xxx
+%      behaviours. By first, it is meant the node that responds first.
+%
+%      btune always uses gproc keys of the form `{p,l,Key}' when you
+%      call `btune:listen(...)', but many times the listener wants to
+%      send a message back to a server. Servers can be registered using
+%      `{via,gproc,{n,l,Key}}' in any of the gen_xxx `start_link(...)'
+%      functions, and this function will help the listener to get the
+%      pid of that sever in the cluster.
+%
+% @equiv get_pid(Key,DEFAULT_TIMEOUT)
+% @end
+-spec get_pid(Key::key()) -> [{pid(), Value::term()}].
+get_pid(Key) ->
+   get_pid(Key,?TIMEOUT).
 
+% @doc   Same as {@link get_pid/1} but with the a specified timeout.
+% @end
+-spec get_pid(Key::key(),Timeout::integer()) -> pid().
+get_pid(Key,Timeout) ->
+   R=mcall(gproc,lookup_pids,[{n,l,Key}],Timeout),
+   case lists:append(R) of
+      []  -> error(badarg);
+      L0  -> lists:nth(1,L0)
+   end.
 
 %% Internal utility functions
 %% ==========================
 mcall(M,F,A,Timeout) ->
    {R,_} = rpc:multicall(M,F,A,Timeout),
-   %Force lists:append to return a list
-   %  seems to be a bug in lists:append not to return a list
-   %  if there are no lists inside
-   R0=lists:append(R),
-   case is_list(R0) of
-      true  -> R0;
-      false -> [R0]
-   end.
+   R.
 
 %get keys from list of the form [[{p,l,Key},Pid,Value},...],[...]]
 getresult([]) ->
@@ -241,8 +269,12 @@ exec_test_() ->
         [
             ?tt("bcast()",test_bcast()),
             ?tt("lookup_values()",test_lookup_values()),
+            ?tt("get_pid()",test_get_pid()),
+            ?tt("get_pid() w bad key",test_badarg_get_pid()),
             ?tt("match()",test_match()),
+            ?tt("match() w empty result",test_empty_match()),
             ?tt("match_rnd()",test_match_rnd()),
+            ?tt("match_rnd() w empty result",test_empty_match_rnd()),
             ?tt("unlisten()",test_unlisten()),
             ?tt("reg(Key,Val)",test_reg()),
             ?tt("reg(Key)",test_reg1()),
@@ -271,6 +303,27 @@ test_lookup_values() ->
          ok=?reg(node1,{p,l,mykey},{vnode1,v2node1}),
          ok=?reg(node2,{p,l,mykey},{vnode2,v2node2}),
          btune:lookup_values(mykey)
+      end).
+
+test_get_pid() ->
+   ?assertMatch(
+      ok,
+      begin
+         ok=?reg(node1,{n,l,mygetpidkey},dummyvalue1),
+         ok=?reg(node2,{n,l,mygetpidkey},dummyvalue1),
+         Pid=btune:get_pid(mygetpidkey),
+         PidNode1=global:whereis_name(node1),
+         %The tuple is is a trick to make eunit show Pid
+         %and PidNode1 values if it fails
+         ?assertEqual(Pid,PidNode1)
+      end).
+
+test_badarg_get_pid() ->
+   ?assertError(
+      badarg,
+      begin
+         %Non-existant key
+         btune:get_pid(mygetpidkey2)
       end).
 
 test_reg() ->
@@ -304,6 +357,13 @@ test_match() ->
          btune:match({{bkey,'_'},'_'})
       end).
 
+test_empty_match() ->
+   ?assertEqual(
+      [],
+      begin
+         btune:match({some_strange_key,noise})
+      end).
+
 test_match_rnd() ->
    ?assert(
       begin
@@ -319,6 +379,12 @@ test_match_rnd() ->
          Num1 =/= Num2 orelse Num2 =/= Num3 orelse Num3 =/= Num4
       end).
 
+test_empty_match_rnd() ->
+   ?assertError(
+      no_match,
+      begin
+         btune:match_rnd({some_strange_key,noise})
+      end).
 test_unlisten() ->
    [?assertMatch(
       [{{{newkey,10},Pid},_,undefined}],
