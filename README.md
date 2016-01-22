@@ -2,7 +2,7 @@
 
 # btune - Gproc-based cluster-wide messaging #
 
-__Version:__ 0.2.0-3-gbbe0ba0
+__Version:__ 0.3
 
 __Authors:__ erlanger.
 
@@ -10,11 +10,15 @@ This application implements a simple cluster-wide message broadcasting/listening
 library.
 
 
+### <a name="News">News</a> ###
+
+Version 0.3 includes the <code><a href="btune.html#get_pid-1"><code>btune:get_pid/1</code></a></code> function.
+
+
 ### <a name="Introduction">Introduction</a> ###
 
-
 It is meant to be a specific type of publish/subscribe model adapted to erlang's
-messaging and node structure. 
+messaging and node structure.
 
 
 ### <a name="Important_definitions">Important definitions</a> ###
@@ -25,8 +29,9 @@ messaging and node structure.
 
 
 
-<dd> A <code>key</code> is any erlang <code>term()</code> that identifies a desire to listen to
-        messages.</dd>
+<dd> A <code>key</code> is any erlang <code>term()</code> that identifies
+        a desire to listen to messages. In the case of<code><a href="btune.html#get_pid-1"><code>btune:get_pid/1</code></a></code> it identifies a server
+        that has been registered <code>{via,grpoc,{n,l,Key}}</code>.</dd>
 
 
 
@@ -34,10 +39,12 @@ messaging and node structure.
 
 
 
-<dd><p> A cluster is defined as all the nodes connected to the current node.
-        In order to have a dynamic cluster, where nodes can be automatically
-        discovered you can use<code>nodefinder</code> at<a href="http://github.com/erlanger/nodefinder" target="_top"><tt>http://github.com/erlanger/nodefinder</tt></a> to enable automatic discovery of
-nodes. </p>With the use of <code>nodefinder</code> a cluster is dynamically managed
+<dd><p> A cluster is defined as all the nodes connected to
+        the current node. In order to have a dynamic cluster,
+        where nodes can be automatically discovered you can use<code>nodefinder</code> at <a href="http://github.com/erlanger/nodefinder" target="_top"><tt>http://github.com/erlanger/nodefinder</tt></a>
+        to enable automatic discovery of nodes. It is very easy,
+        just include the <code>nodefinder</code> app in your release, and
+it's done. No code to write.</p>With the use of <code>nodefinder</code> a cluster is dynamically managed
         and all nodes on the LAN having the same erlang cookie and running<code>nodefinder</code> are automatically added so that <code>btune</code> is always 
         connected to all the nodes.</dd>
 
