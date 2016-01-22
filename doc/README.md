@@ -2,7 +2,7 @@
 
 # btune - Gproc-based cluster-wide messaging #
 
-__Version:__ 0.3
+__Version:__ 0.3-2-g0c9c791
 
 __Authors:__ erlanger.
 
@@ -12,7 +12,7 @@ library.
 
 ### <a name="News">News</a> ###
 
-Version 0.3 includes the <code><a href="btune.html#get_pid-1"><code>btune:get_pid/1</code></a></code> function.
+Version 0.3 includes the [get_pid](https://github.com/erlanger/btune/blob/master/doc/btune.md#get_pid-2) function.
 
 
 ### <a name="Introduction">Introduction</a> ###
@@ -30,7 +30,7 @@ messaging and node structure.
 
 
 <dd> A <code>key</code> is any erlang <code>term()</code> that identifies
-        a desire to listen to messages. In the case of<code><a href="btune.html#get_pid-1"><code>btune:get_pid/1</code></a></code> it identifies a server
+        a desire to listen to messages. In the case of<code>get_pid(...)</code> it identifies a server
         that has been registered <code>{via,grpoc,{n,l,Key}}</code>.</dd>
 
 

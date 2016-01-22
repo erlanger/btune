@@ -141,7 +141,6 @@ lookup_values(Key,Timeout) ->
   R=mcall(gproc,lookup_values,[{p,l,Key}],Timeout),
   lists:append(R).
 
-% @private
 % @doc Returns the `pid()' of the first process matching `Key'
 %      in the cluster, but it does not include any listeners.
 %

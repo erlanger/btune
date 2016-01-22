@@ -9,7 +9,7 @@
      library.
 
 == News ==
-Version 0.3 includes the `{@link btune:get_pid/1}' function.
+Version 0.3 includes the <a href="https://github.com/erlanger/btune/blob/master/doc/btune.md#get_pid-2">get_pid</a> function.
 
 == Introduction ==
 It is meant to be a specific type of publish/subscribe model adapted to erlang's
@@ -20,7 +20,7 @@ messaging and node structure.
    <dt>key</dt>
    <dd> A `key' is any erlang `term()' that identifies
         a desire to listen to messages. In the case of
-        `{@link btune:get_pid/1}' it identifies a server
+        `get_pid(...)' it identifies a server
         that has been registered `{via,grpoc,{n,l,Key}}'.
    </dd>
    <dt>cluster</dt>
