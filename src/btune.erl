@@ -65,7 +65,7 @@ unlisten(Key) ->
    unreg(Key).
 
 % @doc Like {@link match/1} but returns one random entry.
-%      If there is no match a 'no_match` error is raised.
+%      If there is no match a `no_match' error is raised.
 % @end
 -spec match_rnd(Pattern::term()) -> {key(),pid(),Value::term()}.
 match_rnd(Pattern) ->

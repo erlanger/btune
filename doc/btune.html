@@ -21,13 +21,19 @@
  functions the key needs to be a tuple.</p>
 
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#bcast-2">bcast/2</a></td><td>Send <code>Msg</code> to all connected nodes.</td></tr>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#bcast-2">bcast/2</a></td><td>Send <code>Msg</code> to processes registered with <code>Key</code> in all connected nodes.</td></tr>
+<tr><td valign="top"><a href="#count-1">count/1</a></td><td>Returns true if there are no listeners for keys that match the given <code>Pattern</code>,
+      otherwise returns the number of matches for <code>Pattern</code>.</td></tr>
+<tr><td valign="top"><a href="#get_pid-2">get_pid/2</a></td><td>  Same as <a href="#get_pid-1"><code>get_pid/1</code></a> but with the a specified timeout.</td></tr>
 <tr><td valign="top"><a href="#listen-1">listen/1</a></td><td>Adds the calling process to the list of listeners of  <code>Key</code>.</td></tr>
 <tr><td valign="top"><a href="#match-1">match/1</a></td><td>match keys againts <code>Pattern</code> as in <a href="ets.html#match-2"><code>ets:match/2</code></a>.</td></tr>
 <tr><td valign="top"><a href="#match-2">match/2</a></td><td>Same as <a href="#match-1"><code>match/1</code></a> but with a specific timeout in milliseconds.</td></tr>
-<tr><td valign="top"><a href="#no_listener-1">no_listener/1</a></td><td>Returns true if there are no listeners for keys that match the given <code>Pattern</code>,
-      otherwise returns the number of matches for <code>Pattern</code>.</td></tr>
+<tr><td valign="top"><a href="#match_rnd-1">match_rnd/1</a></td><td>Like <a href="#match-1"><code>match/1</code></a> but returns one random entry.</td></tr>
+<tr><td valign="top"><a href="#reg-1">reg/1</a></td><td>Registers the calling process with <code>Key</code>.</td></tr>
+<tr><td valign="top"><a href="#reg-2">reg/2</a></td><td>Registers the calling process with <code>Key</code> and <code>Value</code>.</td></tr>
 <tr><td valign="top"><a href="#unlisten-1">unlisten/1</a></td><td>Removes the calling process from the list of listeners of  <code>Key</code>.</td></tr>
+<tr><td valign="top"><a href="#unreg-1">unreg/1</a></td><td>Unregisters the <code>Key</code> that was previously registered by the
+      calling process.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -35,7 +41,20 @@
 <h3 class="function"><a name="bcast-2">bcast/2</a></h3>
 <div class="spec">
 <p><tt>bcast(Key::<a href="#type-key">key()</a>, Msg::any()) -&gt; any()</tt><br></p>
-</div><p>Send <code>Msg</code> to all connected nodes.</p>
+</div><p>Send <code>Msg</code> to processes registered with <code>Key</code> in all connected nodes.</p>
+
+<h3 class="function"><a name="count-1">count/1</a></h3>
+<div class="spec">
+<p><tt>count(Pattern::term()) -&gt; true | integer()</tt><br></p>
+</div><p><p>Returns true if there are no listeners for keys that match the given <code>Pattern</code>,
+      otherwise returns the number of matches for <code>Pattern</code>.</p>
+
+      The <code>Pattern</code> is the same as in <a href="#match-1"><code>match/1</code></a>.</p>
+
+<h3 class="function"><a name="get_pid-2">get_pid/2</a></h3>
+<div class="spec">
+<p><tt>get_pid(Key::<a href="#type-key">key()</a>, Timeout::integer()) -&gt; pid()</tt><br></p>
+</div><p>  Same as <a href="#get_pid-1"><code>get_pid/1</code></a> but with the a specified timeout.</p>
 
 <h3 class="function"><a name="listen-1">listen/1</a></h3>
 <div class="spec">
@@ -63,7 +82,8 @@ if you want to match.</p>
       ...
       n1@host&gt; btune:match({mykey,'_','_'}).
       [{{mykey,param1,param2},&lt;0.43,0&gt;,undefined},
-         {{mykey,param3,param4},&lt;3332.43.0&gt;,undefined}]</pre>
+         {{mykey,param3,param4},&lt;3332.43.0&gt;,undefined}]</pre><p>
+      If there is no match an empty list <code>[]</code> is returned.</p>
 
       A default timeout of 3 seconds is presumed.
       Use <a href="#match-2"><code>match/2</code></a> if you want a different one.</p>
@@ -73,21 +93,35 @@ if you want to match.</p>
 <p><tt>match(Pattern::term(), Timeout::integer()) -&gt; [{<a href="#type-key">key()</a>, pid(), Value::term()}]</tt><br></p>
 </div><p>Same as <a href="#match-1"><code>match/1</code></a> but with a specific timeout in milliseconds.</p>
 
-<h3 class="function"><a name="no_listener-1">no_listener/1</a></h3>
+<h3 class="function"><a name="match_rnd-1">match_rnd/1</a></h3>
 <div class="spec">
-<p><tt>no_listener(Pattern::term()) -&gt; true | integer()</tt><br></p>
-</div><p><p>Returns true if there are no listeners for keys that match the given <code>Pattern</code>,
-      otherwise returns the number of matches for <code>Pattern</code>.</p>
+<p><tt>match_rnd(Pattern::term()) -&gt; {<a href="#type-key">key()</a>, pid(), Value::term()}</tt><br></p>
+</div><p>Like <a href="#match-1"><code>match/1</code></a> but returns one random entry.
+      If there is no match a <code>no_match</code> error is raised.</p>
 
-      The <code>Pattern</code> is the same as in <a href="#match-1"><code>match/1</code></a>.</p>
+<h3 class="function"><a name="reg-1">reg/1</a></h3>
+<div class="spec">
+<p><tt>reg(Key::<a href="#type-key">key()</a>) -&gt; true</tt><br></p>
+</div><p>Registers the calling process with <code>Key</code>.</p>
+
+<h3 class="function"><a name="reg-2">reg/2</a></h3>
+<div class="spec">
+<p><tt>reg(Key::<a href="#type-key">key()</a>, Value::term()) -&gt; true</tt><br></p>
+</div><p>Registers the calling process with <code>Key</code> and <code>Value</code>.</p>
 
 <h3 class="function"><a name="unlisten-1">unlisten/1</a></h3>
 <div class="spec">
 <p><tt>unlisten(Key::<a href="#type-key">key()</a>) -&gt; true</tt><br></p>
 </div><p>Removes the calling process from the list of listeners of  <code>Key</code>.</p>
+
+<h3 class="function"><a name="unreg-1">unreg/1</a></h3>
+<div class="spec">
+<p><tt>unreg(Key::<a href="#type-key">key()</a>) -&gt; true</tt><br></p>
+</div><p>Unregisters the <code>Key</code> that was previously registered by the
+      calling process.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, Nov 23 2014, 01:03:41.</i></p>
+<p><i>Generated by EDoc, Jan 22 2016, 12:50:08.</i></p>
 </body>
 </html>

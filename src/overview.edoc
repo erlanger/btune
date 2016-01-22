@@ -8,6 +8,9 @@
 @doc This application implements a simple cluster-wide message broadcasting/listening
      library.
 
+== News ==
+Version 0.3 includes the `{@link btune:get_pid/1}' function.
+
 == Introduction ==
 It is meant to be a specific type of publish/subscribe model adapted to erlang's
 messaging and node structure. 
@@ -15,15 +18,19 @@ messaging and node structure.
 == Important definitions ==
 <dl>
    <dt>key</dt>
-   <dd> A `key' is any erlang `term()' that identifies a desire to listen to
-        messages. 
+   <dd> A `key' is any erlang `term()' that identifies
+        a desire to listen to messages. In the case of
+        `{@link btune:get_pid/1}' it identifies a server
+        that has been registered `{via,grpoc,{n,l,Key}}'.
    </dd>
    <dt>cluster</dt>
-   <dd> A cluster is defined as all the nodes connected to the current node.
-        In order to have a dynamic cluster, where nodes can be automatically
-        discovered you can use  `nodefinder' at
-        [http://github.com/erlanger/nodefinder] to enable automatic discovery of
-        nodes. 
+   <dd> A cluster is defined as all the nodes connected to
+        the current node. In order to have a dynamic cluster,
+        where nodes can be automatically discovered you can use
+        `nodefinder' at [http://github.com/erlanger/nodefinder]
+        to enable automatic discovery of nodes. It is very easy,
+        just include the `nodefinder' app in your release, and
+        it's done. No code to write.
 
         With the use of `nodefinder' a cluster is dynamically managed
         and all nodes on the LAN having the same erlang cookie and running 
