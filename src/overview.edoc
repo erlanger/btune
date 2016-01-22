@@ -56,5 +56,7 @@ messaging and node structure.
 <li>Match keys with a pattern similar to ets:match().</li>
 </ol>
 
- 
+== Docs ==
+
+Click on the `btune' module below to get to the documentation.
 @end

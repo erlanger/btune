@@ -2,7 +2,7 @@
 
 # btune - Gproc-based cluster-wide messaging #
 
-__Version:__ 0.3.1
+__Version:__ 0.3.1-1-g192527c
 
 __Authors:__ erlanger.
 
@@ -72,6 +72,9 @@ it's done. No code to write.</p>With the use of <code>nodefinder</code> a cluste
 1. Match keys with a pattern similar to ets:match().
 
 
+
+### <a name="Docs">Docs</a> ###
+Click on the `btune` module below to get to the documentation.
 
 ## Modules ##
 
