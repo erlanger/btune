@@ -208,7 +208,7 @@ whereis_name(Key) ->
    try
       get_pid(Key)
    catch
-      throw:badarg ->
+      exit:badarg ->
          undefined
    end.
 
