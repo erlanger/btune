@@ -77,7 +77,7 @@ unlisten(Key) ->
 match_rnd(Pattern) ->
    case match(Pattern) of
       [] -> error(no_match);
-      L  -> lists:nth( random:uniform(length(L)), L)
+      L  -> lists:nth( rand:uniform(length(L)), L)
    end.
 
 % @doc match keys againts `Pattern' as in {@link ets:match/2}.
