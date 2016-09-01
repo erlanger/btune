@@ -9,6 +9,12 @@
          get_pid/1,get_pid/2
         ]).
 
+% {via, btune, Key} exports
+-export([register_name/2,
+         unregister_name/1,
+         whereis_name/1,
+         send/2]).
+
 -ifdef(TEST).
 -export([test_start/0,startvm/2]).
 -endif.
@@ -172,8 +178,55 @@ get_pid(Key,Timeout) ->
       L0  -> lists:nth(1,L0)
    end.
 
+%% Global-like api to use in {via, btune, Key}
+%% specifications
+
+% @doc Registers a process in gproc with an `{n,l,Name}' key.
+%      This function is provided so that `{via, btune, Name}' can
+%      be used in any of the gen_xxx behaviours.
+% @end
+-spec register_name(Name, Pid) -> 'yes' | 'no'
+      when Name :: term(), Pid :: pid().
+register_name(Name, Pid) when is_pid(Pid) ->
+   gproc:register_name({n,l,Name},Pid).
+
+% @doc Unregisters a process in gproc with an `{n,l,Name}' key.
+%      This function is provided so that `{via, btune, Name}' can
+%      be used in any of the gen_xxx behaviours.
+% @end
+-spec unregister_name(Key::key()) -> true.
+unregister_name(Key) ->
+   gproc:unregister_name({n,l,Key}).
+
+% @doc Returns the `pid()' of a process that was previously
+%      registered with `register_name/2'.
+%      This function is provided so that `{via, btune, Name}' can
+%      be used in any of the gen_xxx behaviours.
+% @end
+-spec whereis_name(Key::key()) -> pid() | undefined.
+whereis_name(Key) ->
+   try
+      get_pid(Key)
+   catch
+      throw:badarg ->
+         undefined
+   end.
+
+% @doc Sends `Msg' to a process that was registered with
+%      `register_name/2'. The first node that responds
+%      having a  process with an `{n,l,Key}' determines
+%      where the message is sent.
+%      This function is provided so that `{via, btune, Name}' can
+%      be used in any of the gen_xxx behaviours.
+% @end
+-spec send(Key::key(), Msg::any()) -> Msg::any().
+send(Key,Msg) ->
+   gproc:send(get_pid(Key),Msg).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal utility functions
-%% ==========================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 mcall(M,F,A,Timeout) ->
    {R,_} = rpc:multicall(M,F,A,Timeout),
    R.
